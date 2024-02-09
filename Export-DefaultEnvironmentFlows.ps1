@@ -24,7 +24,7 @@ Import-Module Microsoft.PowerApps.Administration.PowerShell
 Add-PowerAppsAccount 
 
 # Set the export path for the exported packages
-$ExportPath = "c:\temp\DefaultEnvironmentFlowExport"
+$ExportPath = "c:\ExportedPackages"
 $NewOwnerObjectId = "54bb79ce-e9b3-471e-b2f9-9b80fec31256"
 
 # Get the default environment
@@ -106,6 +106,7 @@ foreach ($Flow in $Flows) {
             $SetNewOwner | fl
         }
     }
+
     if ($ApiRequest.status -eq "Failed") {
         Write-Host "Error exporting $FlowDisplayName" -ForegroundColor Red
         $ApiRequest | fl
@@ -120,6 +121,8 @@ foreach ($Flow in $Flows) {
     $ExportedPackages.Add([pscustomobject]@{
         FlowDisplayName = $FlowDisplayName
         FlowId = $FlowId
+        CreatedBy = $Flow.CreatedBy.UserId
+        CreatedTime = $Flow.CreatedTime
         ExportStatus = $ApiRequest.status
         ExportedPackageLink = $ApiRequest.packageLink.value
         ErrorCode = $ApiRequest.errors.code
