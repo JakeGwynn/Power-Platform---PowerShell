@@ -19,23 +19,28 @@ Connect-AzAccount
 $KeyVaultName = "KeyVault1-JakeGwynnDemo"
 $ResourceGroupName = "PnP-Site-Provisioning"
 
+# Get the webpage that contains the JSON file with the Azure Public IP addresses
 $AzurePublicIPAddressPageRequest = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-gb/download/confirmation.aspx?id=56519'
 
+# Get the link to the JSON file from the webpage
 $JSONFileLink = (($AzurePublicIPAddressPageRequest.Links |  Where-Object { $_.href -like "*Public*json" })[0].href)
 
+# Request the JSON file from the link
 $JSONFileRequest = Invoke-WebRequest -Uri $JSONFileLink -ContentType 'application/json'
 
+# Convert the content of the JSON file request response content to a string
 $JSONFileContent = [System.Text.Encoding]::UTF8.GetString($JSONFileRequest.Content)
 
 # Convert the string from JSON to a PowerShell object
 $AllIpAddressesObject = $JSONFileContent | ConvertFrom-Json
 
-# Get the IP addresses from the JSON object for the following names: AzureConnectors.NorthCentralUS, AzureConnectors.SouthCentralUS, AzureConnectors.CentralUS, AzureConnectors.EastUS, AzureConnectors.EastUS2, AzureConnectors.WestUS, AzureConnectors.WestUS2, AzureConnectors.WestUS3, AzureConnectors.WestCentralUS, AzureConnectors.WestUS2, AzureConnectors.WestCentralUS
+# Get the IP addresses from the PowerShell object for the following names: AzureConnectors.NorthCentralUS, AzureConnectors.SouthCentralUS, AzureConnectors.CentralUS, AzureConnectors.EastUS, AzureConnectors.EastUS2, AzureConnectors.WestUS, AzureConnectors.WestUS2, AzureConnectors.WestUS3, AzureConnectors.WestCentralUS, AzureConnectors.WestUS2, AzureConnectors.WestCentralUS
 $PowerPlatIPAddressesObject = $AllIpAddressesObject.values | Where-Object { $_.name -in @("AzureConnectors.NorthCentralUS", "AzureConnectors.SouthCentralUS", "AzureConnectors.CentralUS", "AzureConnectors.EastUS", "AzureConnectors.EastUS2", "AzureConnectors.WestUS", "AzureConnectors.WestUS2", "AzureConnectors.WestUS3", "AzureConnectors.WestCentralUS", "AzureConnectors.WestUS2", "AzureConnectors.WestCentralUS") }
 
-# Take the following list of IP addresses and make it an array that will work to input to an azure storage account firewall rule
+# Get the IP addresses from the JSON object
 $PowerPlatIPAddresses = $PowerPlatIPAddressesObject | Select-Object -ExpandProperty properties | Select-Object -ExpandProperty addressPrefixes
 
+# Add the IP addresses to the Key Vault firewall rules
 foreach ($IP in $PowerPlatIPAddresses) {
     Add-AzKeyVaultNetworkRule -VaultName $KeyVaultName -ResourceGroupName $ResourceGroupName -IPAddressRange $IP
 }
